@@ -26,6 +26,7 @@ module Fog
         # @see http://docs.amazonwebservices.com/AmazonS3/latest/API/mpUploadInitiate.html
         #
         def initiate_multipart_upload(bucket_name, object_name, options = {})
+          options['x-amz-content-sha256'] = Digest::SHA256.hexdigest("")
           request({
             :expects    => 200,
             :headers    => options,

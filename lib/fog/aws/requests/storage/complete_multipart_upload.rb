@@ -36,7 +36,7 @@ module Fog
           request({
             :body       => data,
             :expects    => 200,
-            :headers    => { 'Content-Length' => data.length },
+            :headers    => { 'Content-Length' => data.length, 'x-amz-content-sha256' => Digest::SHA256.hexdigest(data) },
             :bucket_name => bucket_name,
             :object_name => object_name,
             :method     => 'POST',

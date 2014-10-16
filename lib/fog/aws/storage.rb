@@ -162,6 +162,8 @@ module Fog
           case region.to_s
           when DEFAULT_REGION, ''
             's3.amazonaws.com'
+          when 'cn-north-1'
+            's3.cn-north-1.amazonaws.com.cn'
           else
             "s3-#{region}.amazonaws.com"
           end
@@ -351,7 +353,7 @@ module Fog
 
         def initialize(options={})
           @use_iam_profile = options[:use_iam_profile]
-          setup_credentials(options)
+          #setup_credentials(options)
           if @endpoint = options[:endpoint]
             endpoint = URI.parse(@endpoint)
             @host = endpoint.host
@@ -364,6 +366,7 @@ module Fog
             @port       = options[:port]        || DEFAULT_SCHEME_PORT[@scheme]
           end
           @path_style = options[:path_style] || false
+          setup_credentials(options)
         end
 
         def data
@@ -498,7 +501,7 @@ DATA
           @aws_secret_access_key = options[:aws_secret_access_key]
           @aws_session_token     = options[:aws_session_token]
           @aws_credentials_expire_at = options[:aws_credentials_expire_at]
-
+          @signer = Fog::AWS::SignatureV4.new( @aws_access_key_id, @aws_secret_access_key, @region, 's3')
           @hmac = Fog::HMAC.new('sha1', @aws_secret_access_key)
         end
 
@@ -519,18 +522,24 @@ DATA
         def request(params, &block)
           refresh_credentials_if_expired
 
-          expires = Fog::Time.now.to_date_header
+          #expires = Fog::Time.now.to_date_header
 
           params[:headers]['x-amz-security-token'] = @aws_session_token if @aws_session_token
-          signature = signature(params, expires)
-
+          #signature = signature(params, expires)
+          
           params = request_params(params)
           scheme = params.delete(:scheme)
           host   = params.delete(:host)
           port   = params.delete(:port) || DEFAULT_SCHEME_PORT[scheme]
 
-          params[:headers]['Date'] = expires
-          params[:headers]['Authorization'] = "AWS #{@aws_access_key_id}:#{signature}"
+          #params[:headers]['Date'] = expires
+          #params[:headers]['Authorization'] = "AWS #{@aws_access_key_id}:#{signature}"
+          date = Fog::Time.now
+          params[:headers]['x-amz-date'] = date.to_iso8601_basic
+          params[:headers]['Date'] = date.to_date_header
+          params[:headers]['Host'] = host
+          params[:headers]['Authorization'] = @signer.sign(params, date)
+          
           # FIXME: ToHashParser should make this not needed
           original_params = params.dup
 

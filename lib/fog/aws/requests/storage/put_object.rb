@@ -28,6 +28,7 @@ module Fog
         def put_object(bucket_name, object_name, data, options = {})
           data = Fog::Storage.parse_data(data)
           headers = data[:headers].merge!(options)
+          headers['x-amz-content-sha256'] = Digest::SHA256.hexdigest(data[:body])
           request({
             :body       => data[:body],
             :expects    => 200,

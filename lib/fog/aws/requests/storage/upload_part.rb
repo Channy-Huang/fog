@@ -22,6 +22,7 @@ module Fog
           data = Fog::Storage.parse_data(data)
           headers = options
           headers['Content-Length'] = data[:headers]['Content-Length']
+          headers['x-amz-content-sha256'] = Digest::SHA256.hexdigest(data[:body])
           request({
             :body       => data[:body],
             :expects    => 200,
